@@ -1,2 +1,2 @@
 # enfuse-script
-Enfuse script used for image blending and focuse stacking, providing opinionated defaults and curated selections.
+Enfuse script used for image blending and focus stacking with opinionated defaults.
