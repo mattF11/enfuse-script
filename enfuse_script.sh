@@ -20,6 +20,7 @@ c="/usr/bin/dcraw"
 d="Converted_Images"
 e="$HOME/enfuse-script"
 ###################################################################################
+
 # log 
 #LOG_FILE="enfuse-script/logfile.log"
 #LOG_LEVEL="INFO"
@@ -43,14 +44,14 @@ e="$HOME/enfuse-script"
 # Normal use
 #./script.sh
 #That’s it! It’s as simple as that! You can now include debug logging in your script and enable or disable it at runtime. Obviously you can have a more complex argument setup for your script with getopts or similar depending on your needs, but this is a simple example to get you started.
+
 #################################################################################
 
 # SELECTION
 echo "$USER, select the action (1/2/3)
 1. Focus Stacking
 2. Blending
-2. Exit
-: "
+3. Exit : "
 read selection
 #check if string is inserted
 if [[ -z "$selection" ]]
@@ -60,10 +61,11 @@ else
     echo "CORRECT:insertion type correct"
 fi
 
+###################################################################################
 ####################################################################################
 
 #FUNCTIONS
-#funtion for .tiff convertion using dcraw
+#funtion for .tiff conversion using dcraw
 function tiff_function {
     echo ".tiff conversion"
     if [[ -e "$c" ]]
@@ -140,15 +142,15 @@ function tiff_function {
                         exit 1
                     fi
                     echo "File converted."
-                    exit 0
                 fi
             else
                 echo "ERROR:wrong input number"
             fi
+	fi
+    fi
 
             exit 0
             #########################################################################
-
         else
             #########################################################################
             #directory conversion
@@ -173,7 +175,6 @@ function tiff_function {
 
             shopt -u nullglob
             echo "Directory converted."
-            exit 0
             #########################################################################
         fi
     fi
@@ -181,8 +182,22 @@ function tiff_function {
 
 
 ##################################################################################
+##################################################################################
 
-#1.handling case selection
+#is enfuse installed on your system?
+if [[ -e "$b" ]]
+then
+    echo "Enfuse is installed"
+else
+    echo "Enfuse not installed"
+    exit 1
+fi
+cd "$a"
+
+##################################################################################
+##################################################################################
+
+#1.handling case selection:focus stacking
 case $selection in
     1|1.|Focus Stacking|focus stacking)
 	echo "Selected: Focus Stacking"
@@ -200,8 +215,8 @@ case $selection in
 	then
 	    echo "directory for converted images already exists"
 	else
-	    echo "directory doesn't exist,creating the working directory...."
-	    cd "$e" | mkdir "$d" | cd "$d"
+	    echo "directory doesn't exist,creating the working directory.."
+	    cd "$e" | mkdir -p "$d" | cd "$d"
 	fi
 
 	DIR="$(pwd)"
@@ -227,7 +242,7 @@ case $selection in
                 echo "Search folder/directory:"
                 read folder
                 # Case-insensitive search
-                find . -type d -name "*${folder}*" > dnglab.txt
+                find . -type d -name "*${folder}*" > finder.txt
                 i=0
         
                 while read line
@@ -235,7 +250,7 @@ case $selection in
                     echo "[$i] $line"
                     ris[$i]="$line"	
                     ((i++))
-                done < dnglab.txt
+                done < finder.txt
 
 		#see if it's valuable to implement a removal of the older original files,as a request to the user
                 if [[ "$i" -eq "0" ]]
@@ -246,21 +261,49 @@ case $selection in
                     echo "Directory found"
                     echo "Select a directory/folder(n):"
                     read dir
-
                     selection="${ris[$dir]}"
                     echo "$dir: "$selection""
-
-                    echo "Convert the entire directory(1=yes / 2=no)?"
+                    echo "Stack the entire directory or single file (1=directory / 2=file)?"
                     read f1
-		    
-		    #function call tiff
-		    tiff_function
-		 fi
-
-		    ;;
 
 
-   2|2.|Blending)
+		    shopt -s nullglob #if file not found, empty string
+			#repeat conversion process to convert all files in a folder
+                        for file in "$selection"/*
+			do
+                            if [[ "$f1" == "1" ]]
+			    then
+                     #command used to convert images
+		    #1.allign images,bad idea to stack them without allign
+		    #commands will:allign,then stack and remove halo focus
+				align_image_stack -m -a OUT "$file" "${file[i]}.tiff"
+				enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
+				--hard-mask --gray-projector=l-star --output=baseOpt2.tiff OUT*.tiff
+			    fi	    
+                        done
+                        shopt -u nullglob
+
+                        echo "Directory converted."
+			
+			#single image selected
+		        if [[ "$f1" == "2" ]]
+			    then
+				echo "enter file name:" ;read filename
+				echo ""$filename" conversion started.."
+				align_image_stack -m -a OUT "$file" "${file[i]}.tiff"
+				enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
+				       --hard-mask --gray-projector=l-star --output=baseOpt2.tiff OUT*.tif
+		                echo "done"
+			    fi
+                    fi  
+		;;
+				       
+
+####################################################################################
+####################################################################################
+#2.Handling of selection:Blending
+
+	2|2.|Blending)
 	echo "Selected: Blending"
 	#verify if enblend-enfuse exists in the right directory
 	if [[ -e "$b" ]]
@@ -271,10 +314,8 @@ case $selection in
 	    exit 1
 	fi
 
-	#	echo "You need to have files converted to .tiff"
-	tiff_function
-
-	
+	#echo "You need to have files converted to .tiff"
+	tiff_function	
 	#selection option added to complete the script
                 cd "$a" || { echo "ERROR: cannot cd into $a"; exit 1; }
                 echo "Search folder/directory:"
@@ -299,24 +340,41 @@ case $selection in
                     echo "Directory found"
                     echo "Select a directory/folder(n):"
                     read dir
-
                     selection="${ris[$dir]}"
                     echo "$dir: "$selection""
-
-                    echo "Convert the entire directory(1=yes / 2=no)?"
+                    echo "Blend the entire directory or exit (1=directory / 2=exit)?"
                     read f1
-                 
-		   
-		    #function call tiff
-		    tiff_function
-		    exit 0
-		 fi   
-		    ;;
 
-		    *)
-			echo "option not found"
-			exit 1
-		    ;;
+		    for file in "$selection"/*
+			do
+                            if [[ "$f1" == "1" ]]
+			    then          
+		    #allign and then blend all the images
+				align_image_stack -m -a OUT "$file" "${file[i]}.tiff"
+				enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
+				--hard-mask --gray-projector=l-star --output=baseOpt2.tiff OUT*.tiff
+			    fi
+                    done  
+                        shopt -u nullglob
+                        echo "Process completed."
+                        exit 0
+			#exit selected
+		        if [[ "$f1" == "2" ]]
+			then
+		            echo "exit"
+			fi
+                fi    
+		;;
 
-				       esac
+##################################################################################		    
+#3.Handling of selection:Exit
+	3|3.|EXIT|Exit)
+	echo "Selected: Exit"    
+        ;;
+	*)
+	    echo "ERROR:invalid selection"
+	    ;;
+   
+ esac
 				       
+	       
