@@ -17,39 +17,23 @@ ___________________________
 a="$HOME"
 b="/usr/bin/enblend"
 c="/usr/bin/dcraw"
-d="Converted_Images"
-e="$HOME/enfuse-script"
+d="$HOME/Converted_Images"
+#e="$HOME/enfuse-script"
+
+#comando manuale per allineamento immagini:
+#align_image_stack -m -a OUT _DSC5721.ARW.tiff _DSC5722.ARW.tiff _DSC5723.ARW.tiff _DSC5724.ARW.tiff
+#OUT è il nome utilizzato per tutte le immagini che poi avranno un numero: OUTOOOO.tif; OUT0001.tif...
+
+#comando manuale per fusione dei rispettivi file .tiff
+#per fondere tutti i ifle .tiff nella cartella basterebbe usare
+#enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --output=base.tiff OUT*tif
+
 ###################################################################################
-
-# log 
-#LOG_FILE="enfuse-script/logfile.log"
-#LOG_LEVEL="INFO"
-
-# Check for debug flag
-#if [[ "$1" == "-d" || "$1" == "--debug" ]]; then
-#    LOG_LEVEL="DEBUG"
-#fi
-
-# Initialise the logging module
-#init_logger --log $LOGFILE --level $LOG_LEVEL
-# Log some messages
-#log_info "This is an informational message"
-#log_warn "This is a warning message"
-#log_error "This is an error message"
-#log_debug "This is a debug message"  # Only prints to console and/or log file if debug logging is enabled
-#Now you can run your script with the -d or --debug argument to enable debug logging. For example:
-# Debug use
-#./script.sh --debug
-
-# Normal use
-#./script.sh
-#That’s it! It’s as simple as that! You can now include debug logging in your script and enable or disable it at runtime. Obviously you can have a more complex argument setup for your script with getopts or similar depending on your needs, but this is a simple example to get you started.
-
 #################################################################################
 
 # SELECTION
 echo "$USER, select the action (1/2/3)
-1. Focus Stacking
+1. Focus_Stacking
 2. Blending
 3. Exit : "
 read selection
@@ -61,6 +45,8 @@ else
     echo "CORRECT:insertion type correct"
 fi
 
+mkdir -p "$d"
+ 
 ###################################################################################
 ####################################################################################
 
@@ -79,14 +65,14 @@ function tiff_function {
     cd "$a" || { echo "ERROR: cannot cd into $a"; exit 1; }
     echo "Search folder/directory:"
     read folder
-    find . -type d -name "*${folder}*" > finder.txt  #write results on file
+    find . -type d -name "*${folder}*" > finder.txt
     i=0
     while read line
     do
         echo "[$i] $line"
         ris[$i]="$line"
         ((i++))
-    done < finder.txt  #read result file
+    done < finder.txt
     
     if [[ "$i" -eq "0" ]]
     then
@@ -104,7 +90,7 @@ function tiff_function {
         if [[ "$f1" != "1" ]]
         then
             #########################################################################
-            #single file
+            # single file
             if [[ "$f1" = "2" ]]
             then
                 echo "no:single file selection"
@@ -134,9 +120,9 @@ function tiff_function {
                     out_file="${selection1%.*}.tiff"
                     if [[ "$ff" == "1" ]]
                     then
-                        dcraw -T -6 -w -O "$out_file" "$selection1"
-			#wait for adding to the folder "$d"
-			mv "$out_file" "$d"
+                        dcraw -T -6 -w -o "$out_file" "$selection1"
+			 mv "$out_file" "$d"
+			echo "wait until the end of the process.."
                     else
                         echo "ERROR:wrong input"
                         exit 1
@@ -146,14 +132,10 @@ function tiff_function {
             else
                 echo "ERROR:wrong input number"
             fi
-	fi
-    fi
 
-            exit 0
-            #########################################################################
         else
             #########################################################################
-            #directory conversion
+            # directory conversion
             echo "yes:directory conversion selected"
             echo "Do you really want to convert to TIFF(1=yes / 2=no)?"
             read f1_1
@@ -163,10 +145,10 @@ function tiff_function {
             do
                 if [[ "$f1_1" == "1" ]]
                 then
-                    out_file="${file%.*}.tiff"
-                    dcraw -T -6 -w -O "$out_file" "$file"
-		    #wait for adding to the folder "$d"
-		    mv "$out_file" "$d"
+                    #out_file="${file%.*}.tiff"
+		    out_file="${file%.*}"
+                    dcraw -T -6 -w -o "$out_file" "$file"
+                    #mv "$out_file" "$d"
                 else
                     echo "ERROR:wrong input"
                     exit 1
@@ -179,6 +161,7 @@ function tiff_function {
         fi
     fi
 }
+
 
 
 ##################################################################################
@@ -199,7 +182,8 @@ cd "$a"
 
 #1.handling case selection:focus stacking
 case $selection in
-    1|1.|Focus Stacking|focus stacking)
+    
+    1|1.|Focus_Stacking|Stacking)
 	echo "Selected: Focus Stacking"
 	#verify if enblend-enfuse exists in the right directory
 	if [[ -e "$b" ]]
@@ -216,12 +200,13 @@ case $selection in
 	    echo "directory for converted images already exists"
 	else
 	    echo "directory doesn't exist,creating the working directory.."
-	    cd "$e" | mkdir -p "$d" | cd "$d"
+	    # cd "$e" | mkdir -p "$d"
+	    #mkdir -p "$d"
 	fi
 
 	DIR="$(pwd)"
 	echo "You need to have files converted to .tiff"
-	echo "Do you want to use the built-in converter or an external program (1=built-in / 2=external) ?"
+	echo "Do you want to use the built-in converter or an external program (1=built-in / 2=external / 3=skip) ?"
 	read selection3
 	
 	if [[ "$selection3" == "1" ]]
@@ -238,7 +223,8 @@ case $selection in
 
         #use enfuse on the same folder you just converted
 	#selection option added to complete the script
-                cd "$a" || { echo "ERROR: cannot cd into $a"; exit 1; }
+        cd "$a" || { echo "ERROR: cannot cd into $a"; exit 1; }
+	echo "focus stacking section"
                 echo "Search folder/directory:"
                 read folder
                 # Case-insensitive search
@@ -263,7 +249,7 @@ case $selection in
                     read dir
                     selection="${ris[$dir]}"
                     echo "$dir: "$selection""
-                    echo "Stack the entire directory or single file (1=directory / 2=file)?"
+                    echo "Stack the entire directory or exit (1=directory / 2=exit)?"
                     read f1
 
 
@@ -273,29 +259,25 @@ case $selection in
 			do
                             if [[ "$f1" == "1" ]]
 			    then
-                     #command used to convert images
-		    #1.allign images,bad idea to stack them without allign
-		    #commands will:allign,then stack and remove halo focus
-				align_image_stack -m -a OUT "$file" "${file[i]}.tiff"
-				enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
-				--hard-mask --gray-projector=l-star --output=baseOpt2.tiff OUT*.tiff
+				#command used to convert images
+				#1.allign images,bad idea to stack them without allign
+				#commands will:allign,then stack and remove halo focus
+				align_image_stack -m -a OUT "${file}.tiff"			    
 			    fi	    
                         done
+
+		 enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
+		 --hard-mask --contrast-window-size=2 --gray-projector=l-star \
+		 --contrast-edge-scale=0.2 --output=baseOpt2.tiff OUT*.tiff
                         shopt -u nullglob
 
                         echo "Directory converted."
-			
 			#single image selected
 		        if [[ "$f1" == "2" ]]
-			    then
-				echo "enter file name:" ;read filename
-				echo ""$filename" conversion started.."
-				align_image_stack -m -a OUT "$file" "${file[i]}.tiff"
-				enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
-				       --hard-mask --gray-projector=l-star --output=baseOpt2.tiff OUT*.tif
-		                echo "done"
-			    fi
-                    fi  
+			then
+		            echo "exit"
+			fi
+                fi  
 		;;
 				       
 
@@ -303,7 +285,7 @@ case $selection in
 ####################################################################################
 #2.Handling of selection:Blending
 
-	2|2.|Blending)
+    2|2.|Blending)
 	echo "Selected: Blending"
 	#verify if enblend-enfuse exists in the right directory
 	if [[ -e "$b" ]]
@@ -313,59 +295,62 @@ case $selection in
 	    echo "Enfuse not installed"
 	    exit 1
 	fi
-
+	
 	#echo "You need to have files converted to .tiff"
 	tiff_function	
 	#selection option added to complete the script
-                cd "$a" || { echo "ERROR: cannot cd into $a"; exit 1; }
-                echo "Search folder/directory:"
-                read folder
-                # Case-insensitive search
-                find . -type d -name "*${folder}*" > dnglab.txt
-                i=0
+        cd "$a" || { echo "ERROR: cannot cd into $a"; exit 1; }
+        echo "Search folder/directory:"
+        read folder
+        # Case-insensitive search
+        find . -type d -name "*${folder}*" > dnglab.txt
+        i=0
         
-                while read line
-		do
-                    echo "[$i] $line"
-                    ris[$i]="$line"	
-                    ((i++))
-                done < dnglab.txt
-
-		#see if it's valuable to implement a removal of the older original files,as a request to the user
-                if [[ "$i" -eq "0" ]]
-		then    
-                    echo "Directory not found"
-                    exit 1		    
-                else
-                    echo "Directory found"
-                    echo "Select a directory/folder(n):"
-                    read dir
-                    selection="${ris[$dir]}"
-                    echo "$dir: "$selection""
-                    echo "Blend the entire directory or exit (1=directory / 2=exit)?"
-                    read f1
-
-		    for file in "$selection"/*
-			do
-                            if [[ "$f1" == "1" ]]
-			    then          
+        while read line
+	do
+            echo "[$i] $line"
+            ris[$i]="$line"	
+            ((i++))
+        done < dnglab.txt
+	
+	#see if it's valuable to implement a removal of the older original files,as a request to the user
+        if [[ "$i" -eq "0" ]]
+	then    
+            echo "Directory not found"
+            exit 1		    
+        else
+            echo "Directory found"
+            echo "Select a directory/folder(n):"
+            read dir
+            selection="${ris[$dir]}"
+            echo "$dir: "$selection""
+            echo "Blend the entire directory or exit (1=directory / 2=exit)?"
+            read f1
+	    
+	    for file in "$selection"/*
+	    do
+                if [[ "$f1" == "1" ]]
+		then          
 		    #allign and then blend all the images
-				align_image_stack -m -a OUT "$file" "${file[i]}.tiff"
-				enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
-				--hard-mask --gray-projector=l-star --output=baseOpt2.tiff OUT*.tiff
-			    fi
-                    done  
-                        shopt -u nullglob
-                        echo "Process completed."
-                        exit 0
-			#exit selected
-		        if [[ "$f1" == "2" ]]
-			then
-		            echo "exit"
-			fi
-                fi    
-		;;
-
+		    align_image_stack -m -a OUT "${file}.tiff"
+		fi
+            done
+	    enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
+		   --hard-mask --contrast-window-size=2 --gray-projector=l-star \
+		   --contrast-edge-scale=0.2 --output=baseOpt2.tiff OUT*.tiff
+	    
+            shopt -u nullglob
+            echo "Process completed."
+            exit 0
+	    #exit selected
+	    if [[ "$f1" == "2" ]]
+	    then
+		echo "exit"
+	    fi
+        fi    
+	;;
+    
+    
 ##################################################################################		    
 #3.Handling of selection:Exit
 	3|3.|EXIT|Exit)
@@ -377,4 +362,3 @@ case $selection in
    
  esac
 				       
-	       
