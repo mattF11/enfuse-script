@@ -35,7 +35,8 @@ d="$HOME/Converted_Images"
 echo "$USER, select the action (1/2/3)
 1. Focus_Stacking
 2. Blending
-3. Exit : "
+3. Exit
+: "
 read selection
 #check if string is inserted
 if [[ -z "$selection" ]]
@@ -121,8 +122,8 @@ function tiff_function {
                     if [[ "$ff" == "1" ]]
                     then
                         dcraw -T -6 -w -o "$out_file" "$selection1"
-			 mv "$out_file" "$d"
-			echo "wait until the end of the process.."
+                        mv "$out_file" "$selection"
+                        echo "wait until the end of the process.."
                     else
                         echo "ERROR:wrong input"
                         exit 1
@@ -145,10 +146,9 @@ function tiff_function {
             do
                 if [[ "$f1_1" == "1" ]]
                 then
-                    #out_file="${file%.*}.tiff"
-		    out_file="${file%.*}"
+                    out_file="${file%.*}.tiff"
                     dcraw -T -6 -w -o "$out_file" "$file"
-                    #mv "$out_file" "$d"
+                    #mv "$out_file" "$selection"
                 else
                     echo "ERROR:wrong input"
                     exit 1
@@ -161,7 +161,6 @@ function tiff_function {
         fi
     fi
 }
-
 
 
 ##################################################################################
@@ -185,14 +184,6 @@ case $selection in
     
     1|1.|Focus_Stacking|Stacking)
 	echo "Selected: Focus Stacking"
-	#verify if enblend-enfuse exists in the right directory
-	if [[ -e "$b" ]]
-	then
-	    echo "Enfuse is installed"
-	else
-	    echo "Enfuse not installed"
-	    exit 1
-	fi
 	cd "$a"
 	
 	if [[ -e "$e" ]]
@@ -252,32 +243,46 @@ case $selection in
                     echo "Stack the entire directory or exit (1=directory / 2=exit)?"
                     read f1
 
-
-		    shopt -s nullglob #if file not found, empty string
+		    #shopt -s nullglob #if file not found, empty string
 			#repeat conversion process to convert all files in a folder
-                        for file in "$selection"/*
-			do
-                            if [[ "$f1" == "1" ]]
-			    then
+                        #for file in "$selection"/*
+		    #	do
+
+                    if [[ "$f1" == "1" ]]
+		    then
+			echo "Directory stacking selected"
+			cd "$selection" || { echo "ERROR: cannot enter $selection"; exit 1; }
+			files=(*.tiff)
+
+			if [[ ${#files[@]} -lt 2 ]]
+			then
+			    echo "ERROR:you need at least 2 .tiff files"
+			    exit 1
+			fi
+
+			echo "Align.."
+			align_image_stack -m -a OUT "${files[@]}"
+			pwd
+			echo "Stacking.."
+			enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
+			       --hard-mask --gray-projector=l-star \
+			       --contrast-edge-scale=0.3 \
+			       --output final.tiff OUT*
+			
+			echo "Stacking completed."
 				#command used to convert images
 				#1.allign images,bad idea to stack them without allign
 				#commands will:allign,then stack and remove halo focus
-				align_image_stack -m -a OUT "${file}.tiff"			    
-			    fi	    
-                        done
-
-		 enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
-		 --hard-mask --contrast-window-size=2 --gray-projector=l-star \
-		 --contrast-edge-scale=0.2 --output=baseOpt2.tiff OUT*.tiff
-                        shopt -u nullglob
-
-                        echo "Directory converted."
+#only stack .tiff images,single array
+				#N:B--> ${files[@]} use of @,applied to every single file			  # ${files[*]} use of *,can be applied only to a single,viewd as a string: "f1 f2 f3"
+				# done
 			#single image selected
 		        if [[ "$f1" == "2" ]]
 			then
 		            echo "exit"
 			fi
-                fi  
+			    fi
+		fi
 		;;
 				       
 
@@ -287,15 +292,6 @@ case $selection in
 
     2|2.|Blending)
 	echo "Selected: Blending"
-	#verify if enblend-enfuse exists in the right directory
-	if [[ -e "$b" ]]
-	then
-	    echo "Enfuse is installed"
-	else
-	    echo "Enfuse not installed"
-	    exit 1
-	fi
-	
 	#echo "You need to have files converted to .tiff"
 	tiff_function	
 	#selection option added to complete the script
@@ -332,12 +328,13 @@ case $selection in
                 if [[ "$f1" == "1" ]]
 		then          
 		    #allign and then blend all the images
-		    align_image_stack -m -a OUT "${file}.tiff"
+		    align_image_stack -m -a OUT "${file}"
 		fi
             done
 	    enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 \
-		   --hard-mask --contrast-window-size=2 --gray-projector=l-star \
-		   --contrast-edge-scale=0.2 --output=baseOpt2.tiff OUT*.tiff
+		   --hard-mask --gray-projector=l-star \
+		   --contrast-edge-scale=0.3 \
+		   --output=final.tiff OUT*
 	    
             shopt -u nullglob
             echo "Process completed."
