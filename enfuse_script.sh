@@ -19,15 +19,6 @@ b="/usr/bin/enblend"
 c="/usr/bin/dcraw"
 d="$HOME/Converted_Images"
 #e="$HOME/enfuse-script"
-
-#comando manuale per allineamento immagini:
-#align_image_stack -m -a OUT _DSC5721.ARW.tiff _DSC5722.ARW.tiff _DSC5723.ARW.tiff _DSC5724.ARW.tiff
-#OUT è il nome utilizzato per tutte le immagini che poi avranno un numero: OUTOOOO.tif; OUT0001.tif...
-
-#comando manuale per fusione dei rispettivi file .tiff
-#per fondere tutti i ifle .tiff nella cartella basterebbe usare
-#enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --output=base.tiff OUT*tif
-
 ###################################################################################
 #################################################################################
 
