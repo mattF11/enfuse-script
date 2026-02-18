@@ -1,6 +1,6 @@
 # enfuse-script
 Enfuse script used for image blending and focus stacking with opinionated defaults.
-A script used to stack or blend images without learning multiple programs,you need to enter the image directory and select the action you want to perform,then wait for the result to come out.
+A script used to stack or blend images without learning multiple programs,you need to enter the image directory and select the action you want to perform,then wait for the result.
 
 ## dependancies
 The script needs a couple of cli tools to work properly:
