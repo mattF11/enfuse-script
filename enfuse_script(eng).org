@@ -1,0 +1,68 @@
+#+TITLE: Enfuse_script  
+#+AUTHOR: mattF11   
+#+DATE: 13-01-2026
+#+OPTIONS: toc:nil
+#+LATEX_HEADER: \usepackage{amsmath}
+#+LATEX_HEADER: \usepackage[a4paper, margin=0.60in ]{geometry}
+#+LATEX_HEADER: \setcounter{tocdepth}{-1}
+#+LATEX_HEADER: \usepackage{xcolor}
+#+LATEX_HEADER: \usepackage{fancyvrb}
+#+LATEX_HEADER: \usepackage{graphicx}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \lstset{breaklines=false}
+#+STARTUP: inlineimages
+
+* Introduction
+Enfuse_script is a shell script written in bash.
+The main objective of the script is to provide a good user experience,coupled with what i consider "good defaults" for "simple" image manipulation.
+If you are interested in learning more about the tools used in this script,refer to the official enfuse,align_image_stack and dcraw manpages.
+
+** Structure 
+The script was created to satisfy the need for simple image blending(not HDR) and stacking,nothing too advanced or complicated to use.
+It means that images with vastly different FOV(field of view) or focus will produce poor results.
+The script is divided in 3 parts:
+|---------------------+----------------------------|
+| *n°PARTS*             | tools                      |
+|---------------------+----------------------------|
+| 1. *.tiff Conversion* | dcraw                      |
+| 2. *Blending*         | align_image_stack + enfuse |
+| 3. *Stacking*         | align_image_stack + enfuse |
+|---------------------+----------------------------|
+
+*warning*: .tiff conversion is an optional built-in feature.
+The files are required to be tiff,png because of the different utilities used,tiff is the chosen format because of its
+specifications,widespread adoption and support(dcraw,align_image_stack,enfuse).
+
+** Installation
+Follow the installation process:
+#+begin_src 
+//clone the repo
+ git clone https://github.com/mattF11/enfuse-script
+
+//cd into directory
+ cd enfuse-script
+
+//add the necessary permissions
+ chmod +x enfuse_script.sh
+
+//you can add it to your PATH,remember to type:
+ source ~/.bashrc
+
+#+end_src
+
+** Usage
+To run the script follow the instructions:
+#+begin_src 
+//cd into directory
+ cd enfuse-script
+
+//run the script
+ ./enfuse-script.sh
+
+//if the directory was previously added to your PATH,
+//you don't need to cd into enfuse-script,just run it:
+  enfuse_script.sh
+#+end_src
+
+The search feature does not require the user to be into the directory where the images are stored.
+The script will guide the user,everything is explained,there is no need to provide images or a samples for it.
